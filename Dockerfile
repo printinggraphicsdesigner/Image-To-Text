@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Tesseract + সব ভাষার প্যাকেজ (১২০+ ভাষা)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-all \
