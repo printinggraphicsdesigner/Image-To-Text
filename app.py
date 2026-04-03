@@ -5,7 +5,7 @@ from PIL import Image
 import io
 import time
 
-app = FastAPI(title="Image to Text OCR - Auto Multi Language")
+app = FastAPI(title="Image to Text OCR - Auto Like imagetotext.info")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,10 +29,7 @@ def check_rate_limit(client_ip: str):
     rate_limit[client_ip] = [ts for ts in rate_limit[client_ip] if now - ts < window]
     
     if len(rate_limit[client_ip]) >= max_requests:
-        raise HTTPException(
-            status_code=429,
-            detail="Rate limit exceeded. ১০টা ইমেজ প্রতি ৬ ঘণ্টায়।"
-        )
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. ১০টা ইমেজ প্রতি ৬ ঘণ্টায়।")
     
     rate_limit[client_ip].append(now)
 
@@ -47,9 +44,10 @@ async def extract_text(request: Request, file: UploadFile = File(...)):
     contents = await file.read()
     image = Image.open(io.BytesIO(contents))
 
-    # imagetotext.info এর মতো অটো + লাইন পুরোপুরি প্রিজার্ভ
-    # --psm 6 = সবচেয়ে ভালো লাইন স্ট্রাকচার রাখে
-    config = '--psm 6'
+    # imagetotext.info এর মতো সেরা অটো কনফিগারেশন
+    # PSM 6 + OEM 3 + OSD দিয়ে লাইন হুবহু রাখা হয়
+    config = r'--oem 3 --psm 6 -c tessedit_write_images=false'
+    
     text = pytesseract.image_to_string(image, config=config)
 
     return {
