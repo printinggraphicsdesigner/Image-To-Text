@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: imagetotext-app
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: frankfurt  # বাংলাদেশের কাছাকাছি, লোড কম হবে
+    autoDeploy: true
