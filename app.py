@@ -1,11 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import pytesseract
 from PIL import Image
 import io
 import time
 
-app = FastAPI(title="Image to Text OCR - All Languages")
+app = FastAPI(title="Image to Text OCR - Auto Multi Language")
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +37,7 @@ def check_rate_limit(client_ip: str):
     rate_limit[client_ip].append(now)
 
 @app.post("/extract-text")
-async def extract_text(request: Request, file: UploadFile = File(...), lang: str = Form("eng")):
+async def extract_text(request: Request, file: UploadFile = File(...)):
     client_ip = request.client.host
     check_rate_limit(client_ip)
 
@@ -47,13 +47,14 @@ async def extract_text(request: Request, file: UploadFile = File(...), lang: str
     contents = await file.read()
     image = Image.open(io.BytesIO(contents))
 
-    # মাল্টি-ল্যাঙ্গুয়েজ সাপোর্ট
-    text = pytesseract.image_to_string(image, lang=lang)
+    # imagetotext.info এর মতো অটো + লাইন পুরোপুরি প্রিজার্ভ
+    # --psm 6 = সবচেয়ে ভালো লাইন স্ট্রাকচার রাখে
+    config = '--psm 6'
+    text = pytesseract.image_to_string(image, config=config)
 
     return {
         "text": text.strip(),
-        "filename": file.filename,
-        "languages_used": lang
+        "filename": file.filename
     }
 
 @app.get("/health")
