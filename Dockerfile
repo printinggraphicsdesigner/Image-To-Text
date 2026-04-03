@@ -1,9 +1,9 @@
 FROM python:3.11-slim
 
-# Tesseract OCR ইনস্টল (Render-এর জন্য)
+# Tesseract + সব ভাষার প্যাকেজ (১২০+ ভাষা)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
-    libtesseract-dev \
+    tesseract-ocr-all \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
