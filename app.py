@@ -5,14 +5,16 @@ from PIL import Image, ImageEnhance, ImageFilter
 import io
 import time
 
-app = FastAPI(title="Image to Text OCR - Improved Auto Language Detection")
+app = FastAPI(title="Image to Text OCR - Auto Bengali + English")
 
+# Improved CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],           # WordPress এর জন্য
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Rate limiter
@@ -34,14 +36,11 @@ def check_rate_limit(client_ip: str):
     rate_limit[client_ip].append(now)
 
 def preprocess_image(image):
-    """ইমেজকে আরও পরিষ্কার করা — বাংলা টেক্সটের জন্য সাহায্য করে"""
-    # Convert to grayscale
-    image = image.convert('L')
-    # Enhance contrast
+    """বাংলা টেক্সটের জন্য ইমেজ পরিষ্কার করা"""
+    image = image.convert('L')                    # Grayscale
     enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(2.0)
-    # Sharpen
-    image = image.filter(ImageFilter.SHARPEN)
+    image = enhancer.enhance(2.5)                 # Contrast বাড়ানো
+    image = image.filter(ImageFilter.SHARPEN)     # Sharpen
     return image
 
 @app.post("/extract-text")
@@ -55,19 +54,17 @@ async def extract_text(request: Request, file: UploadFile = File(...)):
     contents = await file.read()
     image = Image.open(io.BytesIO(contents))
     
-    # Preprocessing
     processed_image = preprocess_image(image)
 
-    # সেরা অটো কনফিগারেশন (OSD + PSM 6)
-    # OSD দিয়ে স্ক্রিপ্ট ডিটেক্ট করে, তারপর PSM 6 দিয়ে লাইন প্রিজার্ভ করে
-    config = r'--oem 3 --psm 6 -c tessedit_char_whitelist= --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata'
+    # Bengali + English ফোর্স করে + লাইন প্রিজার্ভ
+    config = r'--oem 3 --psm 6 -l ben+eng'
 
     text = pytesseract.image_to_string(processed_image, config=config)
 
-    # যদি টেক্সট খুব কম আসে, তাহলে PSM 3 চেষ্টা করা
-    if len(text.strip()) < 20:
-        config_fallback = r'--oem 3 --psm 3'
-        text = pytesseract.image_to_string(processed_image, config=config_fallback)
+    # যদি খুব কম টেক্সট আসে তাহলে fallback
+    if len(text.strip()) < 30:
+        config2 = r'--oem 3 --psm 3 -l ben+eng'
+        text = pytesseract.image_to_string(processed_image, config=config2)
 
     return {
         "text": text.strip(),
@@ -76,4 +73,4 @@ async def extract_text(request: Request, file: UploadFile = File(...)):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "Server is running"}
